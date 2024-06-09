@@ -1,0 +1,119 @@
+#One of the firsts attempts who made out good
+from kivy.app import App
+from kivy.uix.button import Button
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
+from kivy.uix.screenmanager import ScreenManager, Screen
+
+# Lista para armazenar os dados dos pacientes
+pacientes = []
+
+class MainScreen(Screen):
+    def __init__(self, **kwargs):
+        super(MainScreen, self).__init__(**kwargs)
+        layout = BoxLayout(orientation='vertical')
+        self.label = Label(text="Bem Vindo!")
+        self.register_button = Button(text="Cadastrar paciente")
+        self.view_button = Button(text="Ver pacientes cadastrados")
+
+        self.register_button.bind(on_press=self.go_to_register)
+        self.view_button.bind(on_press=self.go_to_view)
+
+        layout.add_widget(self.label)
+        layout.add_widget(self.register_button)
+        layout.add_widget(self.view_button)
+        self.add_widget(layout)
+
+    def go_to_register(self, instance):
+        self.manager.current = 'register'
+
+    def go_to_view(self, instance):
+        self.manager.get_screen('view').update_patients_list()
+        self.manager.current = 'view'
+
+class RegisterScreen(Screen):
+    def __init__(self, **kwargs):
+        super(RegisterScreen, self).__init__(**kwargs)
+        layout = BoxLayout(orientation='vertical')
+
+        self.name_input = TextInput(hint_text="Nome do paciente")
+        self.age_input = TextInput(hint_text="Idade do paciente")
+        self.submit_button = Button(text="Adicionar sinais")
+        self.submit_button.bind(on_press=self.go_to_signals)
+
+        layout.add_widget(self.name_input)
+        layout.add_widget(self.age_input)
+        layout.add_widget(self.submit_button)
+        self.add_widget(layout)
+
+    def go_to_signals(self, instance):
+        self.manager.get_screen('signals').patient_data = {
+            'name': self.name_input.text,
+            'age': self.age_input.text
+        }
+        self.manager.current = 'signals'
+
+class SignalsScreen(Screen):
+    def __init__(self, **kwargs):
+        super(SignalsScreen, self).__init__(**kwargs)
+        layout = BoxLayout(orientation='vertical')
+
+        self.pa_input = TextInput(hint_text="Pressão Arterial")
+        self.fc_input = TextInput(hint_text="Frequência Cardíaca")
+        self.sat_input = TextInput(hint_text="Saturação")
+        self.fr_input = TextInput(hint_text="Frequência Respiratória")
+        self.temp_input = TextInput(hint_text="Temperatura")
+        self.save_button = Button(text="Salvar")
+
+        self.save_button.bind(on_press=self.save_patient_data)
+
+        layout.add_widget(self.pa_input)
+        layout.add_widget(self.fc_input)
+        layout.add_widget(self.sat_input)
+        layout.add_widget(self.fr_input)
+        layout.add_widget(self.temp_input)
+        layout.add_widget(self.save_button)
+        self.add_widget(layout)
+
+    def save_patient_data(self, instance):
+        patient_data = self.patient_data
+        patient_data['pa'] = self.pa_input.text
+        patient_data['fc'] = self.fc_input.text
+        patient_data['sat'] = self.sat_input.text
+        patient_data['fr'] = self.fr_input.text
+        patient_data['temp'] = self.temp_input.text
+        pacientes.append(patient_data)
+        print(f"Paciente adicionado: {patient_data}")
+        self.manager.current = 'main'
+
+class ViewPatientsScreen(Screen):
+    def __init__(self, **kwargs):
+        super(ViewPatientsScreen, self).__init__(**kwargs)
+        self.layout = BoxLayout(orientation='vertical')
+        self.add_widget(self.layout)
+
+    def update_patients_list(self):
+        self.layout.clear_widgets()
+        if pacientes:
+            for paciente in pacientes:
+                patient_info = (
+                    f"Nome: {paciente['name']}, Idade: {paciente['age']}, "
+                    f"PA: {paciente['pa']}, FC: {paciente['fc']}, "
+                    f"Sat: {paciente['sat']}, FR: {paciente['fr']}, Temp: {paciente['temp']}"
+                )
+                self.layout.add_widget(Label(text=patient_info))
+        else:
+            self.layout.add_widget(Label(text="Nenhum paciente cadastrado"))
+
+class MyApp(App):
+    def build(self):
+        sm = ScreenManager()
+        sm.add_widget(MainScreen(name='main'))
+        sm.add_widget(RegisterScreen(name='register'))
+        sm.add_widget(SignalsScreen(name='signals'))
+        sm.add_widget(ViewPatientsScreen(name='view'))
+        return sm
+
+if __name__ == "__main__":
+    MyApp().run()
