@@ -1,0 +1,52 @@
+import PySimpleGUI as sg
+
+lista_sinais = []
+id_global = 0
+
+# Função para guardar os sinais vitais
+
+
+def sinais_vitais(valores, window):
+    global id_global
+    pa = valores['pa']
+    fc = valores['fc']
+    fr = valores['fr']
+    sat = valores['sat']
+    temperatura = valores['temperatura']
+    sinais = {'id': id_global, 'pa': pa, 'fc': fc, 'fr': fr, 'sat': sat, 'temperatura': temperatura}
+    lista_sinais.append(sinais)
+    id_global += 1
+    sg.popup('Inserir sinais vitais', 'Sinais cadastrados com sucesso.')
+
+    # Limpar campos após inseridos os sinais
+    window['pa'].update('')
+    window['fc'].update('')
+    window['fr'].update('')
+    window['sat'].update('')
+    window['temperatura'].update('')
+
+# Layout da interface gráfica
+
+
+layout = [
+    [sg.Text('Pressão Arterial:'), sg.Input(key='pa')],
+    [sg.Text('Frequência Cardíaca:'), sg.Input(key='fc')],
+    [sg.Text('Frequência Respiratória:'), sg.Input(key='fr')],
+    [sg.Text('Saturação de O2:'), sg.Input(key='sat')],
+    [sg.Text('Temperatura:'), sg.Input(key='temperatura')],
+    [sg.Button('Inserir Sinais Vitais')]
+]
+
+# Criar a janela
+window = sg.Window('Cadastro de Sinais Vitais', layout)
+
+# Loop de eventos
+while True:
+    event, values = window.read()
+    if event == sg.WINDOW_CLOSED:
+        break
+    elif event == 'Inserir Sinais Vitais':
+        sinais_vitais(values, window)
+
+# Fechar a janela
+window.close()
