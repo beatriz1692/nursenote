@@ -1,0 +1,60 @@
+import PySimpleGUI as sg
+
+# Variáveis globais
+lista_pacientes = []
+id_global = 0
+
+# Função para cadastrar pacientes
+
+
+def cadastrar_paciente(values, window):
+    global id_global
+    nome = values['nome']
+    cpf = values['cpf']
+    idade = values['idade']
+    paciente = {'id': id_global, 'nome': nome, 'cpf': cpf, 'idade': idade}
+    lista_pacientes.append(paciente)
+    id_global += 1
+    sg.popup("Cadastro de Paciente", "Paciente cadastrado com sucesso.")
+    # Limpar os campos de entrada após o cadastro
+    window['nome'].update('')
+    window['cpf'].update('')
+    window['idade'].update('')
+
+# Função para consultar todos os pacientes
+
+
+def consultar_todos_pacientes():
+    if lista_pacientes:
+        consulta_text = ''
+        for paciente in lista_pacientes:
+            consulta_text += f'ID: {paciente['id']}, Nome: {paciente['nome']}, CPF: {paciente['cpf']}, Idade: {paciente['idade']}\n'
+        sg.popup("Consulta de Pacientes", consulta_text)
+    else:
+        sg.popup("Consulta de Pacientes", "Não há pacientes cadastrados.")
+
+# Layout da interface
+
+
+layout = [
+    [sg.Text("Nome:"), sg.InputText(key='nome')],
+    [sg.Text("CPF:"), sg.InputText(key='cpf')],
+    [sg.Text("Idade:"), sg.InputText(key='idade')],
+    [sg.Button("Cadastrar"), sg.Button("Consultar Todos")]
+]
+
+# Criando a janela
+window = sg.Window("Sistema de Cadastramento de Pacientes", layout)
+
+# Loop de eventos
+while True:
+    event, values = window.read()
+    if event == sg.WINDOW_CLOSED:
+        break
+    elif event == "Cadastrar":
+        cadastrar_paciente(values, window)
+    elif event == "Consultar Todos":
+        consultar_todos_pacientes()
+
+# Fechando a janela ao sair do loop de eventos
+window.close()
