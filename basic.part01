@@ -1,119 +1,127 @@
-#One of the firsts attempts who made out good
-from kivy.app import App
-from kivy.uix.button import Button
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
-from kivy.uix.textinput import TextInput
-from kivy.uix.screenmanager import ScreenManager, Screen
+import PySimpleGUI as sg
 
 # Lista para armazenar os dados dos pacientes
 pacientes = []
 
-class MainScreen(Screen):
-    def __init__(self, **kwargs):
-        super(MainScreen, self).__init__(**kwargs)
-        layout = BoxLayout(orientation='vertical')
-        self.label = Label(text="Bem Vindo!")
-        self.register_button = Button(text="Cadastrar paciente")
-        self.view_button = Button(text="Ver pacientes cadastrados")
+# Layout para a tela principal
+def tela_principal():
+    layout = [
+        [sg.Text("Bem Vindo!", font=('Helvetica', 16))],
+        [sg.Button("Cadastrar paciente"), sg.Button("Ver pacientes cadastrados")],
+        [sg.Button("Sair")]
+    ]
+    return sg.Window("Tela Principal", layout, finalize=True)
 
-        self.register_button.bind(on_press=self.go_to_register)
-        self.view_button.bind(on_press=self.go_to_view)
+# Layout para a tela de registro de pacientes
+def tela_cadastro():
+    layout = [
+        [sg.Text("Nome do paciente:"), sg.Input(key="name")],
+        [sg.Text("Idade do paciente:"), sg.Input(key="age")],
+        [sg.Button("Adicionar sinais"), sg.Button("Voltar")]
+    ]
+    return sg.Window("Cadastro de Paciente", layout, finalize=True)
 
-        layout.add_widget(self.label)
-        layout.add_widget(self.register_button)
-        layout.add_widget(self.view_button)
-        self.add_widget(layout)
+# Layout para a tela de sinais vitais
+def tela_sinais(patient_data):
+    layout = [
+        [sg.Text("Pressão Arterial:"), sg.Input(key="pa")],
+        [sg.Text("Frequência Cardíaca:"), sg.Input(key="fc")],
+        [sg.Text("Saturação:"), sg.Input(key="sat")],
+        [sg.Text("Frequência Respiratória:"), sg.Input(key="fr")],
+        [sg.Text("Temperatura:"), sg.Input(key="temp")],
+        [sg.Button("Salvar"), sg.Button("Voltar")]
+    ]
+    return sg.Window("Sinais Vitais", layout, finalize=True), patient_data
 
-    def go_to_register(self, instance):
-        self.manager.current = 'register'
+# Layout para a tela de visualização dos pacientes
+def tela_visualizar_pacientes():
+    # Monta a lista de pacientes cadastrados
+    if pacientes:
+        patient_list = [
+            [sg.Text(f"Nome: {p['name']}, Idade: {p['age']}, "
+                     f"PA: {p['pa']}, FC: {p['fc']}, Sat: {p['sat']}, "
+                     f"FR: {p['fr']}, Temp: {p['temp']}")]
+            for p in pacientes
+        ]
+    else:
+        patient_list = [[sg.Text("Nenhum paciente cadastrado")]]
 
-    def go_to_view(self, instance):
-        self.manager.get_screen('view').update_patients_list()
-        self.manager.current = 'view'
+    layout = patient_list + [[sg.Button("Voltar")]]
+    return sg.Window("Pacientes Cadastrados", layout, finalize=True)
 
-class RegisterScreen(Screen):
-    def __init__(self, **kwargs):
-        super(RegisterScreen, self).__init__(**kwargs)
-        layout = BoxLayout(orientation='vertical')
+# Função principal para controlar as janelas
+def main():
+    window_main, window_cadastro, window_sinais, window_visualizar = tela_principal(), None, None, None
+    patient_data = {}
 
-        self.name_input = TextInput(hint_text="Nome do paciente")
-        self.age_input = TextInput(hint_text="Idade do paciente")
-        self.submit_button = Button(text="Adicionar sinais")
-        self.submit_button.bind(on_press=self.go_to_signals)
+    while True:
+        # Lê eventos de todas as janelas
+        window, event, values = sg.read_all_windows()
 
-        layout.add_widget(self.name_input)
-        layout.add_widget(self.age_input)
-        layout.add_widget(self.submit_button)
-        self.add_widget(layout)
+        # Fecha a aplicação ao sair de qualquer janela
+        if event == sg.WIN_CLOSED or event == "Sair":
+            window.close()
+            if window == window_main:
+                break
+            else:
+                window_main.un_hide()
 
-    def go_to_signals(self, instance):
-        self.manager.get_screen('signals').patient_data = {
-            'name': self.name_input.text,
-            'age': self.age_input.text
-        }
-        self.manager.current = 'signals'
+        # Tela Principal
+        if window == window_main:
+            if event == "Cadastrar paciente":
+                window_cadastro = tela_cadastro()
+                window_main.hide()
+            elif event == "Ver pacientes cadastrados":
+                window_visualizar = tela_visualizar_pacientes()
+                window_main.hide()
 
-class SignalsScreen(Screen):
-    def __init__(self, **kwargs):
-        super(SignalsScreen, self).__init__(**kwargs)
-        layout = BoxLayout(orientation='vertical')
+        # Tela de Cadastro de Pacientes
+        elif window == window_cadastro:
+            if event == "Adicionar sinais":
+                patient_data = {
+                    'name': values['name'],
+                    'age': values['age']
+                }
+                window_sinais, patient_data = tela_sinais(patient_data)
+                window_cadastro.hide()
+            elif event == "Voltar":
+                window_cadastro.hide()
+                window_main.un_hide()
 
-        self.pa_input = TextInput(hint_text="Pressão Arterial")
-        self.fc_input = TextInput(hint_text="Frequência Cardíaca")
-        self.sat_input = TextInput(hint_text="Saturação")
-        self.fr_input = TextInput(hint_text="Frequência Respiratória")
-        self.temp_input = TextInput(hint_text="Temperatura")
-        self.save_button = Button(text="Salvar")
+        # Tela de Sinais Vitais
+        elif window == window_sinais:
+            if event == "Salvar":
+                # Armazena os sinais vitais do paciente
+                patient_data.update({
+                    'pa': values['pa'],
+                    'fc': values['fc'],
+                    'sat': values['sat'],
+                    'fr': values['fr'],
+                    'temp': values['temp']
+                })
+                pacientes.append(patient_data)
+                sg.popup("Paciente adicionado com sucesso!")
+                window_sinais.hide()
+                window_main.un_hide()
+            elif event == "Voltar":
+                window_sinais.hide()
+                
+                window_cadastro.un_hide()
 
-        self.save_button.bind(on_press=self.save_patient_data)
+        # Tela de Visualização dos Pacientes
+        elif window == window_visualizar:
+            if event == "Voltar":
+                window_visualizar.hide()
+                window_main.un_hide()
 
-        layout.add_widget(self.pa_input)
-        layout.add_widget(self.fc_input)
-        layout.add_widget(self.sat_input)
-        layout.add_widget(self.fr_input)
-        layout.add_widget(self.temp_input)
-        layout.add_widget(self.save_button)
-        self.add_widget(layout)
-
-    def save_patient_data(self, instance):
-        patient_data = self.patient_data
-        patient_data['pa'] = self.pa_input.text
-        patient_data['fc'] = self.fc_input.text
-        patient_data['sat'] = self.sat_input.text
-        patient_data['fr'] = self.fr_input.text
-        patient_data['temp'] = self.temp_input.text
-        pacientes.append(patient_data)
-        print(f"Paciente adicionado: {patient_data}")
-        self.manager.current = 'main'
-
-class ViewPatientsScreen(Screen):
-    def __init__(self, **kwargs):
-        super(ViewPatientsScreen, self).__init__(**kwargs)
-        self.layout = BoxLayout(orientation='vertical')
-        self.add_widget(self.layout)
-
-    def update_patients_list(self):
-        self.layout.clear_widgets()
-        if pacientes:
-            for paciente in pacientes:
-                patient_info = (
-                    f"Nome: {paciente['name']}, Idade: {paciente['age']}, "
-                    f"PA: {paciente['pa']}, FC: {paciente['fc']}, "
-                    f"Sat: {paciente['sat']}, FR: {paciente['fr']}, Temp: {paciente['temp']}"
-                )
-                self.layout.add_widget(Label(text=patient_info))
-        else:
-            self.layout.add_widget(Label(text="Nenhum paciente cadastrado"))
-
-class MyApp(App):
-    def build(self):
-        sm = ScreenManager()
-        sm.add_widget(MainScreen(name='main'))
-        sm.add_widget(RegisterScreen(name='register'))
-        sm.add_widget(SignalsScreen(name='signals'))
-        sm.add_widget(ViewPatientsScreen(name='view'))
-        return sm
+    # Fecha todas as janelas ao sair do loop
+    window_main.close()
+    if window_cadastro:
+        window_cadastro.close()
+    if window_sinais:
+        window_sinais.close()
+    if window_visualizar:
+        window_visualizar.close()
 
 if __name__ == "__main__":
-    MyApp().run()
+    main()
